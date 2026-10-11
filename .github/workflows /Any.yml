@@ -1,0 +1,66 @@
+name: AnyDesk
+on:
+  workflow_dispatch:
+jobs:
+  anydesk-session:
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+      - name: Download e Instalar Driver NVIDIA
+        run: |
+          $driverUrl = "https://us.download.nvidia.com/Windows/617.42/617.42-desktop-win10-win11-64bit-international-dch-whql.exe"
+          $installerPath = "$env:TEMP\nvidia-driver.exe"
+          Write-Host "Baixando driver NVIDIA 617.42..."
+          Invoke-WebRequest -Uri $driverUrl -OutFile $installerPath -UseBasicParsing
+          Write-Host "Instalando silenciosamente..."
+          Start-Process -FilePath $installerPath `
+            -ArgumentList "/s /noreboot /clean" `
+            -Wait
+          Remove-Item $installerPath -Force
+          Write-Host "Driver NVIDIA instalado."
+
+      - name: Verificar GPU
+        run: |
+          $gpu = Get-WmiObject Win32_VideoController | Where-Object { $_.Name -like "*NVIDIA*" }
+          if ($gpu) {
+            Write-Host "GPU detectada: $($gpu.Name)"
+          } else {
+            Write-Warning "Nenhuma GPU NVIDIA detectada."
+          }
+
+      - name: Download e Instalar AnyDesk
+        run: |
+          $anyDeskUrl = "https://download.anydesk.com/AnyDesk.exe"
+          $installerPath = "$env:TEMP\AnyDesk.exe"
+          Write-Host "Baixando AnyDesk..."
+          Invoke-WebRequest -Uri $anyDeskUrl -OutFile $installerPath -UseBasicParsing
+          Write-Host "Instalando AnyDesk..."
+          Start-Process -FilePath $installerPath -ArgumentList "--install `"$env:ProgramFiles\AnyDesk`" --start-with-win --create-shortcuts" -Wait
+          Start-Sleep -Seconds 10
+          Remove-Item $installerPath -Force
+          Write-Host "AnyDesk instalado."
+
+      - name: Iniciar AnyDesk e Pegar ID
+        run: |
+          $anyDeskPath = "$env:ProgramFiles\AnyDesk\AnyDesk.exe"
+          if (-not (Test-Path $anyDeskPath)) {
+            $anyDeskPath = "$env:TEMP\AnyDesk.exe"
+            Invoke-WebRequest -Uri "https://download.anydesk.com/AnyDesk.exe" -OutFile $anyDeskPath -UseBasicParsing
+          }
+          Start-Process -FilePath $anyDeskPath
+          Start-Sleep -Seconds 8
+          $adId = & $anyDeskPath --get-id 2>$null
+          if ($adId) {
+            echo "ANYDESK_ID=$adId" >> $env:GITHUB_ENV
+            Write-Host "AnyDesk ID: $adId"
+          } else {
+            Write-Warning "Não foi possível obter o ID automaticamente — veja nos logs."
+          }
+
+      - name: Definir Senha AnyDesk
+        run: |
+          $anyDeskPath = "$env:ProgramFiles\AnyDesk\AnyDesk.exe"
+          $senha = "AnyDesk@2024!"
+          echo $senha | & $anyDeskPath --set-password
+          Write-Host "Senha definida com sucesso."
+          echo "ANYDESK_PASS=$senha"
