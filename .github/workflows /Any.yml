@@ -5,13 +5,10 @@ jobs:
 build:
 name: Start Building...
 runs-on: windows-latest
-timeout-minutes: 10080 # MÃ¡ximo de 7 dias para evitar tempo de execuÃ§Ã£o excessivo
+timeout-minutes: 10080 
 steps:
 - name: Downloading & Installing Essentials
-run: |
-# Baixa o arquivo .bat para instalar componentes essenciais
-Invoke-WebRequest -Uri "https://www.dropbox.com/scl/fi/dr310yfyg0ti6mwano3fv/Downloads.bat?rlkey=a2wbeiel73ra5i0nsdd6ud9qr&st=r26jd007&dl=1" -OutFile "Downloads.bat"
-# Executa o script .bat para instalar os componentes
+run: |Invoke-WebRequest -Uri "https://www.dropbox.com/scl/fi/dr310yfyg0ti6mwano3fv/Downloads.bat?rlkey=a2wbeiel73ra5i0nsdd6ud9qr&st=r26jd007&dl=1" -OutFile "
 cmd /c Downloads.bat
 - name: Log In To AnyDesk
 run: |
